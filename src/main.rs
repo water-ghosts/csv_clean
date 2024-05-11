@@ -31,6 +31,11 @@ fn to_title(input: &str) -> String {
         is_after_space = char == ' ';
     }
 
+    // Trim trailing whitespace
+    while title_string.ends_with(' ') {
+        title_string.pop();
+    }
+
     title_string
 }
 
@@ -49,8 +54,8 @@ fn test_ascii_to_title() {
 
 #[test]
 fn test_unicode_to_title() {
-    let input = " TEST   今日の一枚";
-    let expected = "Test 今日の一枚";
+    let input = " TEST   今日の一枚 test  ";
+    let expected = "Test 今日の一枚 Test";
     let title = to_title(input);
     assert_eq!(&title, expected);
 }
