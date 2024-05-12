@@ -1,4 +1,0 @@
-This would be a good kata to practice. Figuring out the best way to handle escape sequences requires way too much brainpower, and I also have no idea how to debug this in Rust. This is basically a hyper-simplified lexer.
-
-
-
