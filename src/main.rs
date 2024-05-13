@@ -1,7 +1,8 @@
 use std::env;
 use std::fs;
-use std::fs::File;
-use std::io::{stdin, BufRead, BufReader};
+use std::io::{stderr, stdin, BufRead, BufReader, Error, ErrorKind, Write};
+use std::path::Path;
+use std::process::exit;
 
 const FIELD_SEP: char = '\x1f';
 const QUOTE: char = '"';
@@ -199,17 +200,34 @@ fn join(fields: impl Iterator<Item = String>, sep: char) -> String {
     output
 }
 
-fn main() {
+fn try_read_file(filepath: &str) -> Result<Box<dyn BufRead>, Error> {
+    if filepath == "-" {
+        let reader = Box::new(BufReader::new(stdin()));
+        return Ok(reader);
+    }
+
+    let filepath = Path::new(filepath);
+    let metadata = fs::metadata(filepath)?;
+    if metadata.is_file() {
+        let file = fs::File::open(filepath)?;
+        let reader = Box::new(BufReader::new(file));
+        Ok(reader)
+    } else {
+        Err(Error::new(
+            ErrorKind::NotFound,
+            "Specified path is not a file",
+        ))
+    }
+}
+
+fn try_main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
     let filepath = match args.get(1) {
         Some(path) => path,
         None => "-",
     };
 
-    let mut reader: Box<dyn BufRead> = match filepath {
-        "-" => Box::new(BufReader::new(stdin())),
-        _ => Box::new(BufReader::new(File::open(filepath).unwrap())),
-    };
+    let mut reader = try_read_file(&filepath)?;
 
     let mut header = String::new();
     let _ = reader.read_line(&mut header);
@@ -238,6 +256,19 @@ fn main() {
         .map(|row| restore_record(row, output_separator))
     {
         println!("{}", row);
+    }
+    Ok(())
+}
+
+fn main() {
+    match try_main() {
+        Ok(_) => {
+            exit(0);
+        }
+        Err(e) => {
+            let _ = writeln!(stderr(), "Error: {}", e);
+            exit(1);
+        }
     }
 }
 
